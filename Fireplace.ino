@@ -70,7 +70,7 @@ void setup()
   Serial.begin(115200);                     //Activate serial monitor
 
   Serial.print("MAC_ADDRESS = ");Serial.println(WiFi.macAddress());
-  IPAddress rapsberry_server (192,168,0,100);
+  IPAddress rapsberry_server (192,168,0,100);       //IP servidor raspberry pi
   
   connectWiFi();
   
