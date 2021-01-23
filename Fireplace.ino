@@ -52,8 +52,8 @@ Adafruit_MAX31865 fireplace = Adafruit_MAX31865(27, 12, 13, 14);            //Pi
   const int powerMax31865 = 26;             //Pin to power supply MAX31865 module
   const int buzzer = 22;                    //Pin activate buzzer emergency 
   const int pot = 39;                       //Pin connection potentiometer in 
-  const int calibration0 = 512;
-  const int calibration90 = 1536;
+  const int calibration0 = 1536;
+  const int calibration100 = 512;
 
   bool a = true;
   bool b = true;
@@ -210,7 +210,7 @@ void pushClapPosition (void *parameter)
   {
     signalPot = analogRead(pot);                        //Read to potentiometer signal
     delay(100);
-    clapPosition = map(signalPot, (calibration0), (calibration90), 0, 90);      //Map digital signal to angular value clap position ¿¿¿¿¿¿Calibrar potenciómetro una vez montado?????
+    clapPosition = map(signalPot, (calibration0), (calibration100), 0, 100);      //Map digital signal to angular value clap position ¿¿¿¿¿¿Calibrar potenciómetro una vez montado?????
     Serial.print("Posición Clapeta = ");Serial.println(clapPosition);
     delay(1000); 
   }
@@ -339,45 +339,48 @@ void emergency()
 {
   if (fireplaceTemp >= emergencyTempFireplace)
   {
-    Blynk.notify("EMERGENCY_TEMPERATURE_FIREPLACE_ON");           //Notify app activate emergency temperature 
-    Serial.println("EMERGENCY_TEMPERATURE_FIREPLACE_ON");
-    digitalWrite(emergencyRelay, LOW);
-    digitalWrite(dischargeValve, LOW);                           //Open electrovalve to system discharge
-    Blynk.notify("DISCHARGE_VALVE_ON");
-    Serial.println("DISCHARGE_VALVE_ON");
-    emergencyLed.on();                               
-    if (newSetpointClap != 0)                                        //Close Clap
+    delay(3000);
+    if (fireplaceTemp >= emergencyTempFireplace)
     {
-      newSetpointClap = 0;
-      servoSetpoint();
-    }
-    while (fireplaceTemp >= (emergencyTempFireplace - emergencyHysteresis))
+      Blynk.notify("EMERGENCY_TEMPERATURE_FIREPLACE_ON");           //Notify app activate emergency temperature 
+      Serial.println("EMERGENCY_TEMPERATURE_FIREPLACE_ON");
+      digitalWrite(emergencyRelay, LOW);
+      digitalWrite(dischargeValve, LOW);                           //Open electrovalve to system discharge
+      Blynk.notify("DISCHARGE_VALVE_ON");
+      Serial.println("DISCHARGE_VALVE_ON");
+      emergencyLed.on();                               
+      if (newSetpointClap != 0)                                        //Close Clap
       {
-        digitalWrite(buzzer, HIGH);               //Code buzzer emergency
-        delay(1000);
-        digitalWrite(buzzer, LOW);
-        delay(500);
-        digitalWrite(buzzer, HIGH);
-        delay(1000);
-        digitalWrite(buzzer, LOW);
-        Blynk.virtualWrite(V3, clapPosition);               //Send to blynk angular value clap position
-        Blynk.virtualWrite(V0, fireplaceTemp);              //Send to blynk water temperature fireplace
+        newSetpointClap = 0;
+        servoSetpoint();
       }
-    digitalWrite(emergencyRelay, HIGH);
-    digitalWrite(dischargeValve, HIGH);                            //Close electrovalve to system discharge
-    Blynk.notify ("DISCHARGE_VALVE_OFF");
-    Serial.println("DISCHARGE_VALVE_OFF");
-    Blynk.notify("EMERGENCY_TEMPERATURE_FIREPLACE_OFF");         //Notify app desactivate emergency temperature
-    Serial.println("EMERGENCY_TEMPERATURE_FIREPLACE_OFF");
-    emergencyLed.off();
-  }
+      while (fireplaceTemp >= (emergencyTempFireplace - emergencyHysteresis))
+        {
+          digitalWrite(buzzer, HIGH);               //Code buzzer emergency
+          delay(1000);
+          digitalWrite(buzzer, LOW);
+          delay(500);
+          digitalWrite(buzzer, HIGH);
+          delay(1000);
+          digitalWrite(buzzer, LOW);
+          Blynk.virtualWrite(V3, clapPosition);               //Send to blynk angular value clap position
+          Blynk.virtualWrite(V0, fireplaceTemp);              //Send to blynk water temperature fireplace
+        }
+      digitalWrite(emergencyRelay, HIGH);
+      digitalWrite(dischargeValve, HIGH);                            //Close electrovalve to system discharge
+      Blynk.notify ("DISCHARGE_VALVE_OFF");
+      Serial.println("DISCHARGE_VALVE_OFF");
+      Blynk.notify("EMERGENCY_TEMPERATURE_FIREPLACE_OFF");         //Notify app desactivate emergency temperature
+      Serial.println("EMERGENCY_TEMPERATURE_FIREPLACE_OFF");
+      emergencyLed.off();
+   }
 }
 
 void moveClap()
 {
   if (startClap)
   {
-    newSetpointClap = map(signalPot, (calibration0), (calibration90), 0, 90);
+    newSetpointClap = map(signalPot, (calibration0), (calibration100), 0, 100);
     setpointClap = newSetpointClap;
     servoSetpoint();
     startClap = false;  
@@ -388,10 +391,10 @@ void moveClap()
     { 
       closeClap = false;
       openClap = false;
-      newSetpointClap = map (fireplaceTemp, 30, 60, 90, 30);
-      if (newSetpointClap > 90)
+      newSetpointClap = map (fireplaceTemp, 30, 60, 100, 30);
+      if (newSetpointClap > 100)
       {
-        newSetpointClap = 90;
+        newSetpointClap = 100;
       }
       if (newSetpointClap < 30)
       {
@@ -419,7 +422,7 @@ void moveClap()
       }
       if (openClap)
       {  
-        if (newSetpointClap <= 87)
+        if (newSetpointClap <= 97)
         {
           newSetpointClap = (newSetpointClap + spinPulse);
           servoSetpoint(); 
@@ -481,7 +484,7 @@ void playClap()
     servoOff = false;
     Serial.println("                                                                                       ARRANQUE SERVO");  
   }
-  servoSetpointClap = (setpointClap + 45);
+  servoSetpointClap = map(setpointClap, 100, 0, 45, 135);
   controlClap.write (servoSetpointClap) ;
   Serial.print("                                                                                          Servo Setpoint = ");Serial.println(setpointClap);
   delay(speedClap);
