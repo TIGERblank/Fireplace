@@ -16,6 +16,7 @@ Adafruit_MAX31865 fireplace = Adafruit_MAX31865(27, 12, 13, 14);            //Pi
   const float emergencyTempFireplace = 87;      //Water temperature Fireplace for activation emergency normaly 90
   const float calibrationTempFireplace = -4;    //Value to calibrate offset throug real measurement and signal transmitter
   float fireplaceTemp;                          //Water temperature fireplace
+  float fireplaceTempBuffer;                    //Temperature Buffer before write
   const int emergencyHysteresis = 4;            //Hysteresis stay emergency funtion
   bool dischargeState = false;                  //State discharge security
 
@@ -57,6 +58,7 @@ Adafruit_MAX31865 fireplace = Adafruit_MAX31865(27, 12, 13, 14);            //Pi
   bool a = true;
   bool b = true;
   bool c = true;
+  bool d = true;
 
   WidgetLED emergencyLed(V6);
   WidgetLED automaticLed(V7);
@@ -161,10 +163,56 @@ void temperature (void *parameter)
 {
   for(;;)
   {
-    fireplaceTemp = (fireplace.temperature(RNOMINAL, RREF) + calibrationTempFireplace);      //Calculate water temperature fireplace
-    //Blynk.virtualWrite(V0, fireplaceTemp);                                                   //Send to blynk water temperature fireplace
+    fireplaceTempBuffer = (fireplace.temperature(RNOMINAL, RREF) + calibrationTempFireplace);      //Calculate water temperature fireplace buffer
     delay(2000);
-    Serial.print("Temperatura = "); Serial.println(fireplaceTemp);
+    if (d)
+    {
+      float temp1;
+      float temp2;
+      float temp3;
+      float temp4;
+      int i=1;
+      while (i <= 4)
+      {
+        if (i == 1)
+        {
+          temp1 = (fireplace.temperature(RNOMINAL, RREF) + calibrationTempFireplace);      //Calculate water temperature fireplace
+          delay(500);    
+        }
+        if (i == 2)
+        {
+          temp2 = (fireplace.temperature(RNOMINAL, RREF) + calibrationTempFireplace);      //Calculate water temperature fireplace
+          delay(500);
+        }
+        if (i == 3)
+        {
+          temp3 = (fireplace.temperature(RNOMINAL, RREF) + calibrationTempFireplace);      //Calculate water temperature fireplace
+          delay(500); 
+        }
+        if (i == 4)
+        {
+          temp4 = (fireplace.temperature(RNOMINAL, RREF) + calibrationTempFireplace);      //Calculate water temperature fireplace
+          delay(500); 
+        }
+        i = i + 1;
+        if (i == 5)
+        {
+          if (((temp1 - temp2 + temp3 - temp4) >= 2) || ((temp1 - temp2 + temp3 - temp4) <= -2))
+          {
+             i = 1;
+          }
+          else
+          {
+            fireplaceTemp = temp4;
+          }
+        }
+      }  
+      d = false;  
+    }
+    if ((fireplaceTempBuffer-fireplaceTemp) <= 5 || (fireplaceTempBuffer-fireplaceTemp) >= -5)
+    {
+      fireplaceTemp = fireplaceTempBuffer;
+    }
     
     // Check and print any faults 
     uint8_t fault = fireplace.readFault();                                                                                                    
@@ -372,9 +420,9 @@ void emergency()
       Blynk.notify("EMERGENCY_TEMPERATURE_FIREPLACE_OFF");         //Notify app desactivate emergency temperature
       Serial.println("EMERGENCY_TEMPERATURE_FIREPLACE_OFF");
       emergencyLed.off();
-   }
+    }
+  }
 }
-
 void moveClap()
 {
   if (startClap)
