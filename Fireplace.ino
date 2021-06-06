@@ -6,9 +6,14 @@
 #include <Blynk.h>
 #include <Adafruit_MAX31865.h>
 #include <PubSubClient.h>
-#include <ArduinoOTA.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <AsyncElegantOTA.h>
 
 #define BLYNK_PRINT Serial
+
+const char* ssid = "CASA HERMENEGILDO 2";       // Your WiFi credentials, SSID
+const char* password = "hermenegildo";          // Your WiFi credentials, PASSWORD
 
 Adafruit_MAX31865 fireplace = Adafruit_MAX31865(27, 12, 13, 14);            //Pin connection MAX31865 module
 #define RREF 430.0                              //Value Vref resistor 430.0 for PT100 and 4300.0 for PT1000
@@ -23,8 +28,8 @@ Adafruit_MAX31865 fireplace = Adafruit_MAX31865(27, 12, 13, 14);            //Pi
   char auth[] = "P7tFnQt5LBVKBVK0H-__j9St2Xe9xaER";     // You should get Auth Token in the Blynk App. Go to the Project Settings (nut icon).
   char server[] = "blynk-cloud.com";
   unsigned int port = 8442;
-  char ssid[] = "CASA HERMENEGILDO 2";          // Your WiFi credentials, SSID
-  char pass[] = "hermenegildo";                 // Your WiFi credentials, PASSWORD
+
+  AsyncWebServer server1(80);
 
   Servo controlClap;                        //Name servo move to clapper
 
@@ -129,7 +134,8 @@ void setup()
 
 void connectWiFi()
 {
-  WiFi.begin(ssid, pass);
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
   int x = 0;
   while(WiFi.status() !=  WL_CONNECTED and (x <= 3))
   {
@@ -140,8 +146,19 @@ void connectWiFi()
   if(WiFi.status() == WL_CONNECTED)
   {
     Serial.println("WIFI CONNECTION SUCCESSFUL");
-    Serial.printf("CONNECTED TO WIFI SSID = ", WiFi.SSID());
-    Serial.printf("IP ADDRESS = ", WiFi.localIP());
+    Serial.print("CONNECTED TO WIFI SSID: ");
+    Serial.println(ssid);
+    Serial.print("IP ADDRESS: ");
+    Serial.println(WiFi.localIP());
+
+    server1.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+      request->send(200, "text/plain", "Hi! I am ESP32.");
+    });
+ 
+    AsyncElegantOTA.begin(&server1);    // Start ElegantOTA
+    server1.begin();
+    Serial.println("HTTP server started");
+    
     connectBlynk();
   }
   else
@@ -325,6 +342,7 @@ void touchClap (void *parameter)
 
 void loop()
 {
+  AsyncElegantOTA.loop();
 
   Blynk.run();
 
