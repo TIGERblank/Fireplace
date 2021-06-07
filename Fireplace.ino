@@ -214,7 +214,7 @@ void temperature (void *parameter)
         i = i + 1;
         if (i == 5)
         {
-          if (((temp1 - temp2 + temp3 - temp4) >= 2) || ((temp1 - temp2 + temp3 - temp4) <= -2))
+          if (((temp1 - temp2 + temp3 - temp4) > 2) || ((temp1 - temp2 + temp3 - temp4) < -2))
           {
              i = 1;
           }
